@@ -1,0 +1,148 @@
+spring:
+  jackson:
+    # 日期格式
+    date-format: yyyy-MM-dd HH:mm:ss
+    # 时区
+    time-zone: GMT+8
+    # 忽略 null 的属性值
+    default-property-inclusion: NON_NULL
+
+  # 开发环境配置
+  config:
+    activate:
+      # 仅在 dev 环境激活本配置
+      on-profile: dev
+
+  security:
+    oauth2:
+      # 客户端
+      client:
+        registration:
+          ArchIAM:
+            provider: ArchIAM
+            client-id: ${spring.application.name}
+            client-name: ${spring.application.name}
+            authorization-grant-type: client_credentials
+            client-authentication-method: client_secret_basic
+            scope: [ SERVICE ]
+        provider:
+          ArchIAM:
+            # 设置 issuer-uri，让客户端启动时像此授权中心动态获取 OAuth2 和 OIDC 周知端点 URL
+            #issuer-uri: ${ISSUE_ADDR:http://localhost:9000/arch-iam}
+
+            # 不使用签发地址进行解析时，手动指定如下四个周知端点 URL
+            authorizationUri: ${ISSUE_ADDR:http://localhost:9000/arch-iam}/oauth2/authorize
+            token-uri: ${ISSUE_ADDR:http://localhost:9000/arch-iam}/oauth2/token
+            jwk-set-uri: ${ISSUE_ADDR:http://localhost:9000/arch-iam}/oauth2/jwks
+            user-info-uri: ${ISSUE_ADDR:http://localhost:9000/arch-iam}/userinfo
+      # 资源服务器
+      resourceserver:
+        jwt:
+          # 使用网络获取认证服务器公钥
+          #issuer-uri: ${ISSUE_ADDR:http://localhost:9000/arch-iam}
+
+          # 不使用签发地址进行解析时，指定本地保存的签发服务器公钥地址
+          #   优点：离线将授权服务器的公钥拷贝到本地，无需依赖网络访问
+          #   缺点：授权服务器公钥变更没法自动获取
+          public-key-location: classpath:arch-iam/public.pem
+
+  # 缓存配置
+  cache:
+    # 启用自动化装配的 caffeine 本地缓存
+    type: caffeine
+    caffeine:
+      # 默认容量为 128 最大 10000 且缓存过期时间 30s 的本地缓存
+      spec: initialCapacity=128,maximumSize=10000,expireAfterWrite=30s
+
+  cloud:
+    # 配置、发现注册
+    nacos:
+      server-addr: localhost:8848
+      config:
+        # 本地环境关闭 nacos 配置
+        enabled: false
+        file-extension: yaml
+      discovery:
+        server-addr: localhost:8848
+
+    # RPC 调用
+    openfeign:
+      client:
+        default-config: default
+        config:
+          default:
+            logger-level: basic
+      # 激活 Feign 请求客户端 okhttp
+      okhttp:
+        enabled: true
+      # 激活 Feign 追加请求头 OAuth2 令牌
+      oauth2:
+        enabled: true
+        clientRegistrationId: ArchIAM
+      # 激活 Feign 调用熔断机制（基于下方 Resilience4J 配置）
+      circuitbreaker:
+        enabled: true
+
+    # 熔断配置
+    circuitbreaker:
+      resilience4j:
+        # 开启基于信号量的隔板
+        enableSemaphoreDefaultBulkhead: true
+
+resilience4j:
+  # 熔断器
+  circuitbreaker:
+    configs:
+      # 基于计数形式的默认熔断器
+      default:
+        slidingWindowSize: 10
+        minimum-number-of-calls: 10
+        failure-rate-threshold: 50
+        slow-call-rate-threshold: 90
+        slow-call-duration-threshold: PT20S
+        sliding-window-type: count_based
+        max-wait-duration-in-half-open-state: PT0S
+        permitted-number-of-calls-in-half-open-state: 4
+        wait-duration-in-open-state: PT60S
+        automatic-transition-from-open-to-half-open-enabled: false
+  # 时间限制器
+  timelimiter:
+    configs:
+      default:
+        timeout-duration: PT5S
+        cancel-running-future: true
+  # 隔板
+  bulkhead:
+    configs:
+      default:
+        max-concurrent-calls: 25
+        max-wait-duration: PT0S
+
+# 日志配置
+logging:
+  pattern:
+    console: "%clr(%d{HH:mm:ss.SSS}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr(-){faint} %clr([%t]){faint} %clr(%-40logger{39}){cyan}[%line]%clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:%wEx}"
+  level:
+    org.springframework.security: info
+    io.github.reionchan.rpc.feign: debug
+
+# API 文档
+springdoc:
+  version: "@project.version@"
+  api-docs:
+    version: openapi_3_1
+  swagger-ui:
+    display-request-duration: true
+    groups-order: DESC
+    operationsSorter: method
+    disable-swagger-default-url: true
+    use-root-path: true
+    oauth:
+      client-id: arch-web
+      client-secret: secretweb
+  oAuthFlow:
+    authorizationUrl: ${ISSUE_ADDR:http://localhost:9000/arch-iam}/oauth2/authorize
+    tokenUrl: ${ISSUE_ADDR:http://localhost:9000/arch-iam}/oauth2/token
+  show-actuator: false
+  cache:
+    disabled: true

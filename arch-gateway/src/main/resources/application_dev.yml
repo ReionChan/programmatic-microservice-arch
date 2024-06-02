@@ -1,0 +1,42 @@
+spring:
+  # 开发环境配置
+  config:
+    activate:
+      # 仅在 dev 环境激活本配置
+      on-profile: dev
+  cloud:
+    nacos:
+      server-addr: localhost:8848
+      config:
+        # 本地环境关闭 nacos 配置
+        enabled: false
+        file-extension: yaml
+      discovery:
+        server-addr: localhost:8848
+
+  # Security 默认用户设置
+  security:
+    oauth2:
+      client:
+        registration:
+          ArchIAM:
+            provider: ArchIAM
+            client-id: ${spring.application.name}
+            client-secret: secretgateway
+            client-name: ${spring.application.name}
+            authorization-grant-type: client_credentials
+            client-authentication-method: client_secret_basic
+            scope: [ SERVICE ]
+        provider:
+          ArchIAM:
+            authorizationUri: ${ISSUE_ADDR:http://localhost:9090}/oauth2/authorize
+            token-uri: ${ISSUE_ADDR:http://localhost:9090}/oauth2/token
+            jwk-set-uri: ${ISSUE_ADDR:http://localhost:9090}/oauth2/jwks
+            user-info-uri: ${ISSUE_ADDR:http://localhost:9090}/userinfo
+
+# 日志配置
+logging:
+  pattern:
+    console: "%clr(%d{HH:mm:ss.SSS}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr(-){faint} %clr([%t]){faint} %clr(%-40logger{39}){cyan}[%line]%clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:%wEx}"
+  level:
+    root: info

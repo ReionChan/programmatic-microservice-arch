@@ -1,0 +1,86 @@
+spring:
+  # 开发环境配置
+  config:
+    activate:
+      # 仅在 dev 环境激活本配置
+      on-profile: dev
+  cloud:
+    nacos:
+      server-addr: localhost:8848
+      config:
+        # 本地环境关闭 nacos 配置
+        enabled: false
+        file-extension: yaml
+      discovery:
+        server-addr: localhost:8848
+
+  # Security 默认用户设置
+  security:
+    oauth2:
+      authorizationserver:
+        issuer: ${ISSUE_ADDR:http://localhost:9000/arch-iam}
+        # OAuth2 客户端注册信息，生产环境可切换成基于数据库的配置模式
+        client:
+          # 本方网页端用户使用 Web 端登录时，由于是自身系统，使用已被 OAuth2.1 弃用的密码模式（例如：Vue）
+          # 网页客户端，代替用户提交密码进行认证（1. 网页客户端自身认证 2.认证后再进行用户密码模式认证 3.获得用户的访问令牌、刷新令牌）
+          arch-web:
+            token:
+              refresh-token-time-to-live: P1D
+            registration:
+              client-id: arch-web
+              client-name: arch-web
+              # secretweb
+              client-secret: $2a$10$ueyW3xrcU4fV05A0t3lC0.KWmYYEAnQknz3A64vfBr0Rwyc/etHsW
+              client-authentication-methods: [ client_secret_post, client_secret_basic ]
+              # 一方登录提供密码模式、刷新令牌
+              authorization-grant-types: [ client_credentials, password, refresh_token]
+              scopes: [ WEB ]
+          arch-app:
+            token:
+              access-token-time-to-live: P1D
+            registration:
+              client-id: arch-app
+              client-name: arch-app
+              # secret
+              client-secret: $2a$10$XWY/JeWE1SpNQus1mCCJqeh93jrj.hjGDHqJwKLuEEBwv/s5Xylm2
+              client-authentication-methods: [client_secret_post, client_secret_basic]
+              authorization-grant-types: [client_credentials]
+              scopes: [SERVICE]
+          arch-users:
+            token:
+              access-token-time-to-live: P1D
+            registration:
+              client-id: arch-users
+              client-name: arch-users
+              # secretusers
+              client-secret: $2a$10$2mbgP421pk.kLvbEeyZNKOFhIewdVfg/9dSkIl34ROkfXu./xi0/O
+              client-authentication-methods: [ client_secret_post, client_secret_basic ]
+              authorization-grant-types: [ client_credentials ]
+              scopes: [ SERVICE ]
+          arch-iam:
+            token:
+              access-token-time-to-live: P1D
+            registration:
+              client-id: ${spring.application.name}
+              client-name: ${spring.application.name}
+              # secretiam
+              client-secret: $2a$10$b7VN/WDZLSiZKmQKwVJBweiOVaJDiT52Jm35KXoVSouFEbtTg7tIe
+              client-authentication-methods: [ client_secret_post, client_secret_basic ]
+              authorization-grant-types: [ client_credentials ]
+              scopes: [ SERVICE ]
+      client:
+        registration:
+          ArchIAM:
+            client-secret: secretiam
+
+# API 文档设置
+springdoc:
+  # OAuth2 认证服务器开启端口显示
+  show-oauth2-endpoints: true
+
+# 展示所有指标端点
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,circuitbreakers
