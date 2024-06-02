@@ -1,0 +1,13 @@
+spring:
+  # 开发环境配置
+  config:
+    activate:
+      # 仅在 dev 环境激活本配置
+      on-profile: dev
+
+  security:
+    oauth2:
+      client:
+        registration:
+          ArchIAM:
+            client-secret: secret

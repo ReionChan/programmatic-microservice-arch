@@ -1,0 +1,156 @@
+##############################################
+#           Docker Compose V2
+#=============================================
+# dev 模式：
+#   > docker compose up -d --build
+#   > docker compose down
+#     running/stop:
+#       #1 otel-collector
+#       #2 nacos
+#
+# test 模式：
+#   > docker compose --profile test up -d --build
+#   > docker compose --profile test down
+#     running/stop:
+#       #1 otel-collector
+#       #2 nacos
+#       #3 arch-iam
+#       #4 arch-users
+#       #5 arch-app
+#
+################################################
+
+services:
+  # Jaeger 服务
+  jaeger:
+    image: jaegertracing/all-in-one:1.51.0
+    container_name: jaeger
+    restart: always
+    ports:
+      - 4318 # OpenTelemetry Protocol (OTLP) over HTTP
+      - 16686:16686 # UI
+
+  # OpenTelemetry Collector 服务
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.101.0
+    container_name: otel-collector
+    restart: always
+    ports:
+      - 4318:4318 # OTLP http receiver，SpringBoot 自动装配默认 OTLP via HTTP
+    volumes:
+      - ./docker/collector-config.yaml:/collector-config.yaml
+      - /etc/localtime:/etc/localtime:ro
+    command:
+      - "--config=/collector-config.yaml"
+    depends_on:
+      - jaeger
+
+  # Nacos 服务
+  nacos:
+    image: nacos/nacos-server:v2.2.3
+    container_name: nacos
+    privileged: true
+    restart: always
+    environment:
+      MODE: standalone
+      JAVA_OPT: "-Xms256m -Xmx512m -Xmn128m"
+    ports:
+      - 8848:8848
+      - 9848:9848
+      - 9849:9849
+    volumes:
+      - ./docker/application.properties:/home/nacos/conf/application.properties
+      - ./docker/nacos/data/:/home/nacos/data/
+      - ./docker/nacos/logs/:/home/nacos/logs/
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8848/nacos/actuator/health" ]
+      interval: 30s
+      timeout: 5s
+
+  arch-iam:
+    build:
+      context: .
+      dockerfile: dockerfile/arch-iam/Dockerfile
+      tags: ["arch-iam:${TAG}"]
+    container_name: arch-iam
+    restart: always
+    environment:
+      OTEL_SERVICE_NAME: "arch-iam"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4318"
+      OTEL_LOGS_EXPORTER: "otlp"
+      OTEL_CONFIG_FILE:
+      NACOS_ADDR: "nacos:8848"
+    ports:
+      - "9090:9090"
+    depends_on:
+      nacos:
+        condition: service_healthy
+    # 测试环境才启用
+    profiles:
+      - test
+
+  arch-app:
+    build:
+      context: .
+      dockerfile: dockerfile/arch-app/Dockerfile
+      tags: ["arch-app:${TAG}"]
+    container_name: arch-app
+    restart: always
+    environment:
+      OTEL_SERVICE_NAME: "arch-app"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4318"
+      OTEL_LOGS_EXPORTER: "otlp"
+      OTEL_CONFIG_FILE:
+      NACOS_ADDR: "nacos:8848"
+    ports:
+      - "8080:8080"
+    depends_on:
+      arch-iam:
+        condition: service_healthy
+    # 测试环境才启用
+    profiles:
+      - test
+
+  arch-users:
+    build:
+      context: .
+      dockerfile: dockerfile/arch-users/Dockerfile
+      tags: [ "arch-users:${TAG}" ]
+    container_name: arch-users
+    restart: always
+    environment:
+      OTEL_SERVICE_NAME: "arch-users"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4318"
+      OTEL_LOGS_EXPORTER: "otlp"
+      OTEL_CONFIG_FILE:
+      NACOS_ADDR: "nacos:8848"
+    ports:
+      - "8081:8081"
+    depends_on:
+      arch-iam:
+        condition: service_healthy
+    # 测试环境才启用
+    profiles:
+      - test
+
+  arch-gateway:
+    build:
+      context: .
+      dockerfile: dockerfile/arch-gateway/Dockerfile
+      tags: [ "arch-gateway:${TAG}" ]
+    container_name: arch-gateway
+    restart: always
+    environment:
+      OTEL_SERVICE_NAME: "arch-gateway"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4318"
+      OTEL_LOGS_EXPORTER: "otlp"
+      OTEL_CONFIG_FILE:
+      NACOS_ADDR: "nacos:8848"
+    ports:
+      - "9000:9000"
+    depends_on:
+      arch-users:
+        condition: service_healthy
+    # 测试环境才启用
+    profiles:
+      - test

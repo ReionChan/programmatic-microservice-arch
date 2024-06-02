@@ -1,0 +1,39 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: arch-app
+
+  profiles:
+    default: dev
+
+---
+# 开发环境配置
+spring:
+  config:
+    activate:
+      # 仅在 dev 环境激活本配置
+      on-profile: dev
+    # 仅启用本地配置
+    import:
+      - classpath:application_common_dev.yml
+      - classpath:application_dev.yml
+
+---
+# 测试环境
+spring:
+  config:
+    activate:
+      on-profile: test
+    import:
+      - nacos:${spring.application.name:arch-app}?refresh=true&group=DEFAULT_GROUP
+
+---
+# 生产环境
+spring:
+  config:
+    activate:
+      on-profile: prod
+    import:
+      - nacos:${spring.application.name:arch-app}?refresh=true&group=DEFAULT_GROUP

@@ -1,0 +1,22 @@
+###
+# 客户端简化模式（客户端的密码获得令牌直接获得访问令牌）
+POST http://localhost:9090/oauth2/token
+Content-Type: application/x-www-form-urlencoded
+Authorization: Basic YXJjaC13ZWI6c2VjcmV0d2Vi
+
+grant_type=client_credentials&scope=WEB
+
+###
+# 客户端密码模式（客户端帮用户提交用户名密码，获得用户的访问令牌）
+POST http://localhost:9090/oauth2/token
+Content-Type: application/x-www-form-urlencoded
+Authorization: Basic YXJjaC13ZWI6c2VjcmV0d2Vi
+
+grant_type=password&username=sanzang&password=sanzang
+
+
+###
+# 使用上面 sanzang 的令牌访问 arch-app 的资源
+GET http://localhost:8080/ping
+Accept: application/json
+Authorization: Bearer eyJraWQiOiI4ZjQ3YzM5Zi0wZTg3LTQ0Y2YtOGI3ZC1mY2E4ZGE5NjdiYjciLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJ3dWtvbmciLCJhdWQiOiJhcmNoLXdlYiIsIm5iZiI6MTcxNzkzMDU4Mywic2NvcGUiOlsiV0VCIl0sInJvbGVzIjpbIlVTRVIiXSwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo5MDkwIiwiZXhwIjoxNzE3OTMwODgzLCJpYXQiOjE3MTc5MzA1ODMsImp0aSI6IjVjMjRjZTllLTkzNmMtNGI0Yi04YzhjLWVjYTljZDY0N2NlMiJ9.Q4aZwLdxg9DEdOiMfIx4C7q8TY84xhean3eoq4HJJ7YatJ_S_rGdaQqpmD7x-vt_tz6p7-_vmBc-cjVPjY6sqk53yn4impLsivoTlvIhtzjUHns2HrjWxFW2sPATUH--XO_ENTmXV7q6nyZDiEFg2fXgXLT7jc5Io9ylwctRdht8PVN03-3r6GYBSBrbQ5eSXQfjmftPLgcTMrrO9635EjRcCo9t1CKBudXkxjmUbD6gmrMdq2xoDUxv70H21VJiW3zYv_2TkbejqT2Sgfruo2AIH7rJHl_xYN2zEqTWPaA8s8rnnezhNWiJ1-BfnOjMTUcpBWy6UCw8tCWQzAf4eg

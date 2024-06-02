@@ -1,0 +1,22 @@
+{
+  "failResponse": {
+    "code": 400,
+    "success": false,
+    "message": "Bad Request!",
+    "data": null
+  },
+
+  "errorResponse": {
+    "code": 500,
+    "success": false,
+    "message": "Internal Server Error!",
+    "data": null
+  },
+
+  "notAllowResponse": {
+    "code": 405,
+    "success": false,
+    "message": "Method Not Allowed!",
+    "data": null
+  }
+}

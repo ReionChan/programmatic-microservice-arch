@@ -1,0 +1,123 @@
+server:
+  port: 9000
+  shutdown: graceful
+#  http2:
+#    enabled: true
+#  jetty:
+#    threads:
+#      max: 200
+#      min: 4
+#      acceptors: 1
+#      selectors: 1
+#    max-connections: 400
+
+spring:
+  application:
+    name: arch-gateway
+
+  jackson:
+    # 日期格式
+    date-format: yyyy-MM-dd HH:mm:ss
+    # 时区
+    time-zone: GMT+8
+    # 忽略 null 的属性值
+    default-property-inclusion: NON_NULL
+
+  profiles:
+    default: dev
+
+  cloud:
+    nacos:
+      server-addr: localhost:8848
+      config:
+        # 本地环境关闭 nacos 配置
+        enabled: false
+        file-extension: yaml
+      discovery:
+        server-addr: localhost:8848
+    gateway:
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            # 允许跨域访问
+            allowedOrigins: "*"
+            # 允许跨域访问的请求方法
+            allowedMethods: "GET,POST,PUT,PATCH,DELETE,OPTIONS,HEAD"
+            # 允许跨域访问的请求头
+            allowedHeaders: "*"
+            # 允许跨域访问的响应头
+            exposedHeaders: "*"
+            # 允许跨域访问的请求凭证
+            # 发生跨域时是否允许浏览器携带用户状态信息，例如：cookies、http认证信息等
+            allowCredentials: false
+            maxAge: 1800
+      discovery:
+        locator:
+          # 开启网关与服务发现集成
+          enabled: true
+      # 路由规则
+      routes:
+        # 将以 /v3/api-docs/serviceId 路径，路由到 /serviceId/v3/api-docs
+        - id: springdoc-route
+          uri: http://localhost:${server.port}
+          predicates:
+            - Path=/v3/api-docs/**
+          filters:
+            - RewritePath=/v3/api-docs/(?<path>.*), /$\{path}/v3/api-docs
+
+# === SpringDoc ===
+springdoc:
+  version: "@project.version@"
+  # api 文档设置
+  api-docs:
+    version: openapi_3_1
+    # 文档路径，默认 /v3/api-docs
+    path: /v3/api-docs
+  # swagger 文档设置
+  swagger-ui:
+    # 文档路径，默认 /swagger-ui.html
+    path: /swagger-ui.html
+    # 设置不同服务的文档显示名称及链接地址
+    urls:
+      # users 服务文档地址
+      - name: arch-users
+        url: /v3/api-docs/arch-users
+      # products 服务文档地址
+      - name: arch-app
+        url: /v3/api-docs/arch-app
+      # orders 服务文档地址
+      - name: arch-iam
+        url: /v3/api-docs/arch-iam
+    # 设置接口方法按字母排序
+    operations-sorter: alpha
+    # 设置接口标签按字母排序
+    tags-sorter: alpha
+
+---
+# 开发环境配置
+spring:
+  config:
+    activate:
+      # 仅在 dev 环境激活本配置
+      on-profile: dev
+    # 仅启用本地配置
+    import:
+      - classpath:application_dev.yml
+
+---
+# 测试环境
+spring:
+  config:
+    activate:
+      on-profile: test
+    import:
+      - nacos:${spring.application.name:arch-gateway}?refresh=true&group=DEFAULT_GROUP
+
+---
+# 生产环境
+spring:
+  config:
+    activate:
+      on-profile: prod
+    import:
+      - nacos:${spring.application.name:arch-gateway}?refresh=true&group=DEFAULT_GROUP
