@@ -42,6 +42,52 @@ arch-gateway
 docker compose --profile test up -d --build
 ```
 
+## Web API 端点
+
+* 应用内部零信任网络端点认证端点 *OAuth2 Client - credentials 模式*（包含：后台服务、前台 Web 端服务、前端 App 端）
+
+  ```sh
+  # 示例演示 WEB 前端认证获得访问令牌
+  POST http://localhost:9000/arch-iam/oauth2/token
+  Content-Type: application/x-www-form-urlencoded
+  Authorization: Basic YXJjaC13ZWI6c2VjcmV0d2Vi
+  
+  grant_type=client_credentials&scope=WEB
+  ```
+
+* 应用自身用户登录端点 *OAuth2 Client - password 模式* （即：己方或一方用户登录）
+
+  > 🔔 系统初始化的用户账号及密码参考 `arch-user` 模块资源文件夹下面的 `data.sql`
+
+  ```sh
+  # 示例演示用户 wukong 使用 WEB 端登录获取访问、刷新令牌 
+  POST http://localhost:9000/arch-iam/oauth2/token
+  Content-Type: application/x-www-form-urlencoded
+  Authorization: Basic YXJjaC13ZWI6c2VjcmV0d2Vi
+  
+  grant_type=password&scope=WEB&username=wukong&password=wukong
+  ```
+
+* 应用自身用户访问令牌刷新端点
+
+  ```sh
+  # 示例演示用户 wukong 使用 WEB 端刷新令牌 
+  POST http://localhost:9000/arch-iam/oauth2/token
+  Content-Type: application/x-www-form-urlencoded
+  Authorization: Basic YXJjaC13ZWI6c2VjcmV0d2Vi
+  
+  grant_type=refresh_token&scope=WEB&refresh_token=kGrXegF9RW2zqwvMl_NvAc47YtIsVMy_eSV-P7MgmKPwPmS8Ov1mF0qLe7Z2L-FBmfMmGooQlkLHqdl0vn7QM_BRT88D5mL73W-7bEn6bByprP1uIyxS3gmo7sC2OJWk
+  ```
+
+* 登录用户访问受限资源测试端点
+
+  ```sh
+  # 示例演示用户 wukong 使用登录令牌认证方式访问 arch-app 下的受限资源 /ping
+  GET http://localhost:9000/arch-app/ping
+  Authorization: Bearer eyJraWQiOiI2ZTQxNTE4NS05YWU3LTRkZjgtYjU5MS0zZTU5NWZhYzgwNTIiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJ3dWtvbmciLCJhdWQiOiJhcmNoLXdlYiIsIm5iZiI6MTcxODA5OTkzOCwic2NvcGUiOlsiV0VCIl0sInJvbGVzIjpbIlVTRVIiXSwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo5MDkwIiwiZXhwIjoxNzE4MTAwMjM4LCJpYXQiOjE3MTgwOTk5MzgsImp0aSI6ImQ5NGVkNzMwLTA2MjItNGM1OS05YzYyLTljMmJjMzlhNmNjZSJ9.SUrLC7Jy3azs6apyaZ3s6rZdQCX2WvZPtgPcEPTXpq2gBQYgXaj-fhn_iU59fvAuHWitfwTOl7dnlnTArSubAsXtDQjYrCLMViItXYbJFan683sZPkaxnUYVZlMNjQTcsvkH9YR13p2ZHf_YNN4dgnvS2Meup41L9uJLvfcfMAuRanZFzsoCUlGSkeGJyaHME5VeaVt-U8fDLsv9xAnWwDoXN4wCYf5CEBPm8zw5QPcc0Wg4CM7o8RaxdFFXuXjC7O8XgXMm48zj3j2GzVnrf6rZrl_zXri7aFm99RS_-FZcoIrS2NbCH27QUKtgwANV-mmeTwG04eDhcOS1mhHGew
+  
+  ```
+
 ## 使用技术栈
 
 * 服务注册与发现

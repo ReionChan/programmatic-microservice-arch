@@ -27,7 +27,7 @@ public class UserController {
 
     @Autowired
     private IUserService userService;
-    @GetMapping("/user/{userName}")
+    @GetMapping("/rpc/user/{userName}")
     @Operation(summary = "根据用户名查询用户", description = "用户名")
     @PreAuthorize("hasAuthority('" + SERVICE + "')")
     public R<UserDto> getUserByName(@Validated @Length(message = "用户名长度 4 ~ 32",

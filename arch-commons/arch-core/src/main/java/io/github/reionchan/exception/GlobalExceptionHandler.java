@@ -132,7 +132,7 @@ public class GlobalExceptionHandler {
         return R.error(of(INTERNAL_SERVER_ERROR));
     }
 
-    private Throwable getRootCause(Throwable e) {
+    private static Throwable getRootCause(Throwable e) {
         Throwable root = e;
         while (root.getCause() != null) {
             root = root.getCause();
@@ -142,10 +142,27 @@ public class GlobalExceptionHandler {
 
     // 处理 Spring Security 认证授权异常
     public static void handleAuthException(HttpServletRequest request, HttpServletResponse response, RuntimeException exception) throws IOException {
-        HttpStatus status = exception instanceof AuthenticationException ? UNAUTHORIZED : FORBIDDEN;
-        response.setStatus(status.value());
-        response.setCharacterEncoding("UTF8");
-        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        response.getWriter().write(objMapper.writeValueAsString(R.fail(of(status), exception.getMessage())));
+        Throwable root = getRootCause(exception);
+        if (root instanceof AuthenticationException || root instanceof AccessDeniedException) {
+            HttpStatus status = root instanceof AuthenticationException ? UNAUTHORIZED : FORBIDDEN;
+            response.setStatus(status.value());
+            response.setCharacterEncoding("UTF8");
+            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+            response.getWriter().write(objMapper.writeValueAsString(R.fail(of(status), root.getMessage())));
+        } else {
+            HttpStatus status;
+            boolean shouldExpose = true;
+            if (root instanceof RuntimeException) {
+                status = BAD_REQUEST;
+            } else {
+                status = INTERNAL_SERVER_ERROR;
+                shouldExpose = false;
+            }
+            log.error("服务端内部异常: ", root);
+            response.setCharacterEncoding("UTF8");
+            response.setStatus(status.value());
+            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+            response.getWriter().write(objMapper.writeValueAsString(R.fail(of(status), shouldExpose ? root.getMessage() : null)));
+        }
     }
 }

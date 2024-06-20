@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 @FeignClient(name = "arch-users", configuration = FeignClientConfig.class, fallback = UserClientFallback.class)
 public interface UserClient extends UserRpc {
     @Override
-    @GetMapping("/user/{userName}")
+    @GetMapping("/rpc/user/{userName}")
     @Operation(summary = "根据用户名查询用户", description = "用户名")
     R<UserDto> getUserByName(@PathVariable("userName") String userName);
 }
